@@ -997,61 +997,38 @@ async function renderFullPurchasingView(content) {
           <div class="row">
             <div class="field">
               <label>اسم المورد / الشركة</label>
-              <input type="text" id="supName" placeholder="مثال: شركة سابك للحديد" required>
+              <input type="text" id="supName" placeholder="أدخل اسم المورد أو الشركة" required>
             </div>
             <div class="field">
               <label>مجال التوريد / الفئة</label>
-              <select id="supCategory" required>
-                <option value="حديد وهياكل">حديد وهياكل معدنية</option>
-                <option value="ألمنيوم وزجاج">ألمنيوم وزجاج</option>
-                <option value="أنظمة هيدروليكية">أنظمة ومحركات هيدروليكية</option>
-                <option value="اكسسوارات وقطع غيار">اكسسوارات ومستلزمات تصنيع</option>
-                <option value="دهانات ومواد كيميائية">دهانات ومواد كيميائية</option>
-                <option value="أدوات ومعدات">أدوات ومعدات ورش</option>
-              </select>
+              <input type="text" id="supCategory" placeholder="اكتب مجال التوريد (مثال: حديد، ألمنيوم، صيانة...)" required>
             </div>
             <div class="field">
               <label>رقم هاتف المورد (للواتساب)</label>
-              <input type="text" id="supPhone" placeholder="مثال: 0501234567" required>
+              <input type="text" id="supPhone" placeholder="أدخل رقم الهاتف / الواتساب" required>
             </div>
           </div>
           <div class="row">
             <div class="field">
               <label>اسم المسؤول / ممثل المورد</label>
-              <input type="text" id="supContact" placeholder="مثال: م. أحمد علي">
+              <input type="text" id="supContact" placeholder="أدخل اسم الشخص المسؤول">
             </div>
             <div class="field">
               <label>اسم البنك المصرفي</label>
-              <select id="supBankName" required>
-                <option value="مصرف الراجحي">مصرف الراجحي (Al Rajhi)</option>
-                <option value="البنك الأهلي السعودي SNB">البنك الأهلي السعودي (SNB)</option>
-                <option value="بنك الرياض">بنك الرياض (Riyad Bank)</option>
-                <option value="بنك الإنماء">بنك الإنماء (Alinma Bank)</option>
-                <option value="البنك العربي الوطني ANB">البنك العربي الوطني (ANB)</option>
-                <option value="البنك السعودي الأول SABB">البنك السعودي الأول (SABB)</option>
-                <option value="بنك البلاد">بنك البلاد (Bank Albilad)</option>
-                <option value="بنك الجزيرة">بنك الجزيرة (Bank AlJazira)</option>
-                <option value="بنك آخر">بنك آخر</option>
-              </select>
+              <input type="text" id="supBankName" placeholder="أدخل اسم البنك (مثال: الراجحي، الأهلي...)" required>
             </div>
             <div class="field">
               <label>رقم الحساب الحسابي / الآيبان (IBAN)</label>
-              <input type="text" id="supIban" placeholder="مثال: SA8080000011223344556677" required>
+              <input type="text" id="supIban" placeholder="أدخل رقم الآيبان (مثال: SA8080...)" required>
             </div>
           </div>
           <div class="row">
             <div class="field">
               <label>المدينة / الفرع</label>
-              <select id="supCity">
-                <option value="جدة">جدة</option>
-                <option value="الرياض">الرياض</option>
-                <option value="الدمام">الدمام / الشرقية</option>
-                <option value="مكة المكرمة">مكة المكرمة</option>
-                <option value="المدينة المنورة">المدينة المنورة</option>
-              </select>
+              <input type="text" id="supCity" placeholder="أدخل المدينة أو الفرع (مثال: جدة، الرياض...)" required>
             </div>
             <div class="field" style="display:flex;align-items:flex-end;flex:2">
-              <button type="submit" class="btn-primary" style="width:100%">+ إضافة المورد والدفعات للدليل</button>
+              <button type="submit" class="btn-primary" style="width:100%">+ حفظ المورد وبياناته بالكامل</button>
             </div>
           </div>
         </form>
