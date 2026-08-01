@@ -976,6 +976,7 @@ async function renderFullPurchasingView(content) {
   content.innerHTML = `
     <div class="tabs">
       <button class="tab-btn active" data-tab="pending">الطلبات الجديدة</button>
+      <button class="tab-btn" data-tab="suppliers">🏢 دليل الموردين</button>
       <button class="tab-btn" data-tab="review">بانتظار الموافقة</button>
       <button class="tab-btn" data-tab="history">سجل الطلبات</button>
       <button class="tab-btn" data-tab="finance">المالية</button>
@@ -987,6 +988,69 @@ async function renderFullPurchasingView(content) {
           <button class="btn-secondary" onclick="exportTableToCsv('purchasingPendingTable', 'طلبات_المشتريات_الجديدة')">📥 تصدير Excel</button>
         </h2>
         <div id="pendingWrap" class="table-wrap"><div class="empty-state">جاري التحميل...</div></div>
+      </div>
+    </div>
+    <div id="tabSuppliers" class="tab-panel hidden">
+      <div class="card">
+        <h2>🏢 إضافة مورد جديد لدليل الشركة</h2>
+        <form id="addSupplierForm">
+          <div class="row">
+            <div class="field">
+              <label>اسم المورد / الشركة</label>
+              <input type="text" id="supName" placeholder="مثال: شركة سابك للحديد" required>
+            </div>
+            <div class="field">
+              <label>مجال التوريد / الفئة</label>
+              <select id="supCategory" required>
+                <option value="حديد وهياكل">حديد وهياكل معدنية</option>
+                <option value="ألمنيوم وزجاج">ألمنيوم وزجاج</option>
+                <option value="أنظمة هيدروليكية">أنظمة ومحركات هيدروليكية</option>
+                <option value="اكسسوارات وقطع غيار">اكسسوارات ومستلزمات تصنيع</option>
+                <option value="دهانات ومواد كيميائية">دهانات ومواد كيميائية</option>
+                <option value="أدوات ومعدات">أدوات ومعدات ورش</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>رقم هاتف المورد (للواتساب)</label>
+              <input type="text" id="supPhone" placeholder="مثال: 0501234567" required>
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label>اسم المسؤول / ممثل المورد</label>
+              <input type="text" id="supContact" placeholder="مثال: م. أحمد علي">
+            </div>
+            <div class="field">
+              <label>المدينة / الفرع</label>
+              <select id="supCity">
+                <option value="جدة">جدة</option>
+                <option value="الرياض">الرياض</option>
+                <option value="الدمام">الدمام / الشرقية</option>
+                <option value="مكة المكرمة">مكة المكرمة</option>
+                <option value="المدينة المنورة">المدينة المنورة</option>
+              </select>
+            </div>
+            <div class="field" style="display:flex;align-items:flex-end">
+              <button type="submit" class="btn-primary" style="width:100%">+ إضافة المورد للدليل</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>
+          <span>🏢 دليل الموردين المعتمدين بالشركة</span>
+          <button class="btn-secondary" onclick="exportTableToCsv('suppliersTable', 'دليل_الموردين')">📥 تصدير Excel</button>
+        </h2>
+
+        <div class="toolbar">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="suppliersSearchInput" placeholder="بحث باسم المورد، مجال التوريد، أو المدينة...">
+          </div>
+        </div>
+
+        <div id="suppliersWrap" class="table-wrap"><div class="empty-state">جاري تحميل الموردين...</div></div>
       </div>
     </div>
     <div id="tabReview" class="tab-panel hidden">
@@ -1008,16 +1072,41 @@ async function renderFullPurchasingView(content) {
   
   setupTabs();
 
+  document.getElementById('addSupplierForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const list = getSuppliersList();
+    const newSup = {
+      id: 'SUP-' + Math.floor(100 + Math.random() * 900),
+      name: document.getElementById('supName').value,
+      category: document.getElementById('supCategory').value,
+      phone: document.getElementById('supPhone').value,
+      contact: document.getElementById('supContact').value || '—',
+      city: document.getElementById('supCity').value,
+      status: 'معتمد'
+    };
+    list.unshift(newSup);
+    saveSuppliersList(list);
+    logActivity(`قسم المشتريات: إضافة مورد جديد [${newSup.name}] بمجال (${newSup.category})`);
+    toast('تمت إضافة المورد لدليل الشركة بنجاح ✓', 'success');
+    e.target.reset();
+    loadSuppliersDirectory();
+    if (typeof window.refreshCurrentView === 'function') window.refreshCurrentView();
+  });
+
+  attachTableSearch('suppliersSearchInput', 'suppliersWrap');
+  loadSuppliersDirectory();
+
   let materials = getCache('materials') || [];
-  let suppliers = getCache('suppliers') || [];
+  let suppliers = getSuppliersList();
 
   const refreshAll = () => {
-    loadPendingForPurchasing(materials, suppliers);
+    const activeSuppliers = getSuppliersList();
+    loadPendingForPurchasing(materials, activeSuppliers);
     loadManagerData();
   };
 
-  loadMaterials().then(m => { materials = m; loadPendingForPurchasing(materials, suppliers); });
-  loadSuppliers().then(s => { suppliers = s; loadPendingForPurchasing(materials, suppliers); });
+  loadMaterials().then(m => { materials = m; refreshAll(); });
+  refreshAll();
   refreshAll();
 
   window.refreshCurrentView = refreshAll;
@@ -1110,9 +1199,73 @@ async function renderFactoryPurchasing(content, branch) {
   loadInventory(branch);
 }
 
+/* ====== إدارة وتخزين دليل الموردين ====== */
+function getSuppliersList() {
+  try {
+    const cached = localStorage.getItem('pf_suppliers_directory_v1');
+    if (cached) return JSON.parse(cached);
+  } catch (e) {}
+  return [
+    { id: 'SUP-101', name: 'شركة الحديد الوطنية', category: 'حديد وهياكل', phone: '0501112233', contact: 'م. خالد العتيبي', city: 'جدة', status: 'معتمد' },
+    { id: 'SUP-102', name: 'مصنع الشرق للألمنيوم', category: 'ألمنيوم وزجاج', phone: '0554445566', contact: 'أ. سامي الزهراني', city: 'الرياض', status: 'معتمد' },
+    { id: 'SUP-103', name: 'الشركة السعودية للهيدروليك', category: 'أنظمة هيدروليكية', phone: '0567778899', contact: 'م. عادل الشمري', city: 'الدمام', status: 'معتمد' },
+    { id: 'SUP-104', name: 'مؤسسة التوريدات الصناعية', category: 'اكسسوارات وقطع غيار', phone: '0541122334', contact: 'أ. فهد الدوسري', city: 'جدة', status: 'معتمد' }
+  ];
+}
+
+function saveSuppliersList(list) {
+  try { localStorage.setItem('pf_suppliers_directory_v1', JSON.stringify(list)); } catch (e) {}
+}
+
+function loadSuppliersDirectory() {
+  const wrap = document.getElementById('suppliersWrap');
+  if (!wrap) return;
+
+  const suppliers = getSuppliersList();
+  if (!suppliers.length) {
+    wrap.innerHTML = '<div class="empty-state">لا يوجد موردين مسجلين حالياً</div>';
+    return;
+  }
+
+  wrap.innerHTML = `<table id="suppliersTable"><thead><tr>
+    <th>كود المورد</th><th>اسم المورد / الشركة</th><th>مجال التوريد</th><th>رقم التواصل</th><th>الشخص المسؤول</th><th>المدينة</th><th>الحالة</th><th>الإجراءات</th>
+  </tr></thead><tbody>${suppliers.map(s => {
+    const waPhone = (s.phone || '').replace(/\D/g, '');
+    const waUrl = waPhone ? `https://wa.me/966${waPhone.startsWith('0') ? waPhone.slice(1) : waPhone}` : '#';
+    return `
+      <tr data-id="${s.id}">
+        <td><b>${s.id}</b></td>
+        <td><b>${s.name}</b></td>
+        <td><span class="badge" style="background:rgba(255,159,28,0.15);color:var(--accent-orange)">${s.category}</span></td>
+        <td><a href="${waUrl}" target="_blank" class="whatsapp-link">💬 <span>${s.phone || 'واتساب'}</span></a></td>
+        <td>${s.contact || '—'}</td>
+        <td>${s.city || '—'}</td>
+        <td><span class="badge approved">${s.status || 'معتمد'}</span></td>
+        <td><button class="btn-danger deleteSupBtn" style="padding:4px 10px;font-size:12px">إزالة</button></td>
+      </tr>`;
+  }).join('')}</tbody></table>`;
+
+  wrap.querySelectorAll('.deleteSupBtn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const tr = e.target.closest('tr');
+      const id = tr.getAttribute('data-id');
+      if (confirm(`هل أنت تأكد من إزالة المورد [${id}] من الدليل؟`)) {
+        let list = getSuppliersList();
+        list = list.filter(x => x.id !== id);
+        saveSuppliersList(list);
+        toast('تم إزالة المورد بنجاح ✓', 'success');
+        loadSuppliersDirectory();
+        if (typeof window.refreshCurrentView === 'function') window.refreshCurrentView();
+      }
+    });
+  });
+}
+
 async function loadPendingForPurchasing(materials, suppliers) {
   const wrap = document.getElementById('pendingWrap');
   if (!wrap) return;
+
+  suppliers = getSuppliersList();
 
   fetchWithCache('pending_purchasing', 'getRequests', { role: 'موظف المشتريات' }, (rows, isCache, err) => {
     if (err) { wrap.innerHTML = '<div class="empty-state">تعذر تحميل الطلبات</div>'; return; }
