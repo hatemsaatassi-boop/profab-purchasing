@@ -1,5 +1,5 @@
 /* ====== إعدادات عامة ====== */
-const API_URL = 'https://script.google.com/macros/s/AKfycbwFHRQpWX_Mu13DLVQMJ7ktq7d3loZLdxCI7z_sTAzQj5NrbIPoj1eSLu8Gk0yp5qoh/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxAnQ-xVUDYaqkTYeD1IhoycS_MxtUQiMiIxzh0yRh5Gy6-93EbWHpPnYvwXLfS7wAV/exec';
 const FACTORY_ROLES = ['مصنع جدة', 'مصنع الرياض'];
 const QUEUE_KEY = 'pf_queue_v1';
 const SESSION_KEY = 'pf_session_v1';
