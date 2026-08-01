@@ -16,13 +16,13 @@
 <!-- شاشة تسجيل الدخول -->
 <div id="loginScreen" class="login-wrap">
   <div class="login-card">
-    <img src="assets/logo.png" alt="Pro Fab">
-    <h1>المنصة الإدارية المتكاملة</h1>
-    <p class="subtitle">Pro Fab · Professional Fabrication</p>
+    <img src="assets/logo.png" alt="Pro Fab" class="brand-logo-img">
+    <h1 data-i18n="loginTitle">المنصة الإدارية المتكاملة</h1>
+    <p class="subtitle" data-i18n="loginSubtitle">Pro Fab · Professional Fabrication</p>
     <div id="loginError" class="error-msg hidden"></div>
     <form id="loginForm">
       <div class="field">
-        <label>اختيار الحساب / الدور الوظيفي</label>
+        <label data-i18n="accountLabel">اختيار الحساب / الدور الوظيفي</label>
         <select id="accountSelect" required>
           <option value="المدير">المدير (كامل الصلاحيات)</option>
           <option value="قسم المشتريات">قسم المشتريات</option>
@@ -34,11 +34,14 @@
         </select>
       </div>
       <div class="field">
-        <label>كلمة المرور</label>
-        <input type="password" id="passwordInput" placeholder="أدخل كلمة المرور" required>
+        <label data-i18n="passwordLabel">كلمة المرور</label>
+        <input type="password" id="passwordInput" placeholder="أدخل كلمة المرور" required data-i18n-placeholder="passwordPlaceholder">
       </div>
-      <button type="submit" class="btn-primary" id="loginBtn">تسجيل الدخول</button>
+      <button type="submit" class="btn-primary" id="loginBtn" data-i18n="loginBtn">تسجيل الدخول</button>
     </form>
+    <div class="login-lang-select">
+      <button type="button" id="loginLangToggleBtn" class="login-lang-btn">🌐 English</button>
+    </div>
   </div>
 </div>
 
@@ -46,14 +49,16 @@
 <div id="appScreen" class="hidden">
   <header class="app-header">
     <div class="brand">
-      <img src="assets/logo.png" alt="Pro Fab">
-      <div class="brand-text">Pro Fab Enterprise<span>نظام الإدارة والتشغيل المتكامل الفائق</span></div>
+      <img src="assets/logo.png" alt="Pro Fab" class="brand-logo-img">
+      <div class="brand-text">Pro Fab Enterprise<span data-i18n="appSub">نظام الإدارة والتشغيل المتكامل الفائق</span></div>
     </div>
     <div class="user-control">
+      <!-- زر اختيار اللغة -->
+      <button id="langToggleBtn" class="lang-toggle-btn" title="تغيير اللغة / Switch Language">🌐 English</button>
       <!-- زر التبديل بين الثيم الداكن والفاتح -->
       <button id="themeToggleBtn" class="theme-toggle-btn" title="تبديل الثيم">🌙 الوضع الداكن</button>
-      <span class="who">مرحباً، <b id="whoAmI"></b> <span id="whoRoleBadge" class="badge-role"></span></span>
-      <button class="logout-btn" id="logoutBtn">تسجيل الخروج</button>
+      <span class="who"><span data-i18n="welcome">مرحباً،</span> <b id="whoAmI"></b> <span id="whoRoleBadge" class="badge-role"></span></span>
+      <button class="logout-btn" id="logoutBtn" data-i18n="logout">تسجيل الخروج</button>
     </div>
   </header>
 

@@ -6,7 +6,147 @@ const SESSION_KEY = 'pf_session_v1';
 const USERS_KEY = 'pf_users_v3';
 const CACHE_PREFIX = 'pf_cache_v4_';
 const THEME_KEY = 'pf_theme_pref';
+const LANG_KEY = 'pf_lang_pref';
 const ACTIVITIES_KEY = 'pf_activity_logs';
+
+/* ====== القاموس والترجمة (i18n Engine) ====== */
+const TRANSLATIONS = {
+  ar: {
+    appName: "Pro Fab Enterprise",
+    appSub: "نظام الإدارة والتشغيل المتكامل الفائق",
+    welcome: "مرحباً،",
+    logout: "تسجيل الخروج",
+    themeDark: "🌙 الوضع الداكن",
+    themeLight: "☀️ الوضع الفاتح",
+    langBtn: "🌐 English",
+    sidebarTitle: "أقسام المنصة الإدارية",
+
+    loginTitle: "المنصة الإدارية المتكاملة",
+    loginSubtitle: "Pro Fab · Professional Fabrication",
+    accountLabel: "اختيار الحساب / الدور الوظيفي",
+    passwordLabel: "كلمة المرور",
+    passwordPlaceholder: "أدخل كلمة المرور",
+    loginBtn: "تسجيل الدخول",
+    loggingIn: "جاري التحقق...",
+
+    modPurchasing: "قسم المشتريات",
+    modCrm: "قسم خدمة العملاء",
+    modMaintenance: "قسم الصيانة",
+    modHr: "قسم الموارد البشرية",
+    modRbac: "إدارة الموظفين والصلاحيات",
+
+    roleAdmin: "المدير (كامل الصلاحيات)",
+    rolePurchasing: "قسم المشتريات",
+    roleCrm: "قسم خدمة العملاء",
+    roleMaintenance: "قسم الصيانة",
+    roleHr: "قسم الموارد البشرية",
+    roleJeddah: "مصنع جدة",
+    roleRiyadh: "مصنع الرياض",
+
+    offlineMsg: "أنت غير متصل بالإنترنت — البيانات محفوظة محلياً وتترسل تلقائياً عند عودة النت.",
+    syncMsg: "جاري مزامنة العمليات المحفوظة محلياً..."
+  },
+  en: {
+    appName: "Pro Fab Enterprise",
+    appSub: "Super Integrated Management & Operations System",
+    welcome: "Welcome,",
+    logout: "Logout",
+    themeDark: "🌙 Dark Mode",
+    themeLight: "☀️ Light Mode",
+    langBtn: "🌐 العربية",
+    sidebarTitle: "Platform Sections",
+
+    loginTitle: "Integrated Management Platform",
+    loginSubtitle: "Pro Fab · Professional Fabrication",
+    accountLabel: "Select Account / Job Role",
+    passwordLabel: "Password",
+    passwordPlaceholder: "Enter Password",
+    loginBtn: "Login",
+    loggingIn: "Verifying...",
+
+    modPurchasing: "Purchasing Dept.",
+    modCrm: "Customer Service (CRM)",
+    modMaintenance: "Maintenance Dept.",
+    modHr: "Human Resources (HR)",
+    modRbac: "User & Role Management",
+
+    roleAdmin: "Admin (Full Permissions)",
+    rolePurchasing: "Purchasing Department",
+    roleCrm: "Customer Service",
+    roleMaintenance: "Maintenance Department",
+    roleHr: "Human Resources",
+    roleJeddah: "Jeddah Factory",
+    roleRiyadh: "Riyadh Factory",
+
+    offlineMsg: "You are offline — data saved locally and will auto-sync when reconnected.",
+    syncMsg: "Syncing locally saved actions..."
+  }
+};
+
+function getLang() {
+  return localStorage.getItem(LANG_KEY) || 'ar';
+}
+
+function t(key) {
+  const lang = getLang();
+  return (TRANSLATIONS[lang] && TRANSLATIONS[lang][key]) || key;
+}
+
+function initLang() {
+  const currentLang = getLang();
+  applyLang(currentLang);
+
+  const langBtns = [document.getElementById('langToggleBtn'), document.getElementById('loginLangToggleBtn')];
+  langBtns.forEach(btn => {
+    if (btn) {
+      btn.addEventListener('click', () => {
+        const lang = getLang() === 'ar' ? 'en' : 'ar';
+        localStorage.setItem(LANG_KEY, lang);
+        applyLang(lang);
+        renderApp();
+      });
+    }
+  });
+}
+
+function applyLang(lang) {
+  document.documentElement.setAttribute('lang', lang);
+  document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+
+  const langBtns = [document.getElementById('langToggleBtn'), document.getElementById('loginLangToggleBtn')];
+  langBtns.forEach(btn => {
+    if (btn) {
+      btn.textContent = TRANSLATIONS[lang].langBtn;
+    }
+  });
+
+  // Apply to data-i18n elements
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (TRANSLATIONS[lang] && TRANSLATIONS[lang][key]) {
+      el.textContent = TRANSLATIONS[lang][key];
+    }
+  });
+
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (TRANSLATIONS[lang] && TRANSLATIONS[lang][key]) {
+      el.setAttribute('placeholder', TRANSLATIONS[lang][key]);
+    }
+  });
+
+  // Update theme button text according to current language
+  const themeBtn = document.getElementById('themeToggleBtn');
+  if (themeBtn) {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    themeBtn.textContent = currentTheme === 'dark' ? t('themeLight') : t('themeDark');
+  }
+
+  const sidebarTitle = document.querySelector('.sidebar-title');
+  if (sidebarTitle) {
+    sidebarTitle.textContent = t('sidebarTitle');
+  }
+}
 
 /* ====== الحسابات الافتراضية للبدء ====== */
 const DEFAULT_USERS = [
@@ -50,7 +190,7 @@ function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   const btn = document.getElementById('themeToggleBtn');
   if (btn) {
-    btn.innerHTML = theme === 'dark' ? '☀️ الوضع الفاتح' : '🌙 الوضع الداكن';
+    btn.innerHTML = theme === 'dark' ? t('themeLight') : t('themeDark');
   }
 }
 
@@ -310,11 +450,11 @@ function renderApp() {
 
 function getModulesForRole(role) {
   const all = [
-    { id: 'purchasing', title: 'قسم المشتريات', icon: '🛒' },
-    { id: 'crm', title: 'قسم خدمة العملاء', icon: '📱' },
-    { id: 'maintenance', title: 'قسم الصيانة', icon: '🛠️' },
-    { id: 'hr', title: 'قسم الموارد البشرية', icon: '👥' },
-    { id: 'rbac', title: 'إدارة الموظفين والصلاحيات', icon: '👑' }
+    { id: 'purchasing', title: t('modPurchasing'), icon: '🛒' },
+    { id: 'crm', title: t('modCrm'), icon: '📱' },
+    { id: 'maintenance', title: t('modMaintenance'), icon: '🛠️' },
+    { id: 'hr', title: t('modHr'), icon: '👥' },
+    { id: 'rbac', title: t('modRbac'), icon: '👑' }
   ];
 
   if (role === 'المدير') return all;
@@ -1205,6 +1345,7 @@ function setupModals() {
 /* ====== بدء تشغيل المنصة ====== */
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
+  initLang();
   document.getElementById('loginForm').addEventListener('submit', handleLogin);
   document.getElementById('logoutBtn').addEventListener('click', handleLogout);
 
