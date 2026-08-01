@@ -5,6 +5,8 @@ const QUEUE_KEY = 'pf_queue_v1';
 const SESSION_KEY = 'pf_session_v1';
 const USERS_KEY = 'pf_users_v3';
 const CACHE_PREFIX = 'pf_cache_v4_';
+const THEME_KEY = 'pf_theme_pref';
+const ACTIVITIES_KEY = 'pf_activity_logs';
 
 /* ====== الحسابات الافتراضية للبدء ====== */
 const DEFAULT_USERS = [
@@ -26,6 +28,45 @@ function getUsers() {
 
 function saveUsers(users) {
   try { localStorage.setItem(USERS_KEY, JSON.stringify(users)); } catch (e) {}
+}
+
+/* ====== إدارة الثيم الداكن والفاتح (Dark / Light Theme Engine) ====== */
+function initTheme() {
+  const pref = localStorage.getItem(THEME_KEY) || 'light';
+  applyTheme(pref);
+
+  const btn = document.getElementById('themeToggleBtn');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme') || 'light';
+      const next = current === 'light' ? 'dark' : 'light';
+      applyTheme(next);
+      localStorage.setItem(THEME_KEY, next);
+    });
+  }
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const btn = document.getElementById('themeToggleBtn');
+  if (btn) {
+    btn.innerHTML = theme === 'dark' ? '☀️ الوضع الفاتح' : '🌙 الوضع الداكن';
+  }
+}
+
+/* ====== سجل الأنشطة الحية (Activity Audit Feed) ====== */
+function getActivities() {
+  try {
+    return JSON.parse(localStorage.getItem(ACTIVITIES_KEY)) || [
+      { text: 'تم بدء جلسة عمل جديدة وتحديث النظام بنجاح', time: fmtDate(new Date()) }
+    ];
+  } catch (e) { return []; }
+}
+
+function logActivity(text) {
+  const list = getActivities();
+  list.unshift({ text: text, time: fmtDate(new Date()) });
+  try { localStorage.setItem(ACTIVITIES_KEY, JSON.stringify(list.slice(0, 30))); } catch (e) {}
 }
 
 /* ====== أدوات الحفظ والتخزين المؤقت اللحظي ====== */
@@ -144,6 +185,52 @@ function updateOfflineBanner() {
 window.addEventListener('online', updateOfflineBanner);
 window.addEventListener('offline', updateOfflineBanner);
 
+/* ====== تصدير وطباعة التقارير (CSV & Print Engine) ====== */
+function exportTableToCsv(tableId, filename) {
+  const table = document.getElementById(tableId) || document.querySelector('table');
+  if (!table) { toast('لا توجد بيانات للتصدير', 'error'); return; }
+
+  const rows = [];
+  table.querySelectorAll('tr').forEach(row => {
+    const cols = [];
+    row.querySelectorAll('th, td').forEach(cell => {
+      // إزالة الأزرار والنصوص الزائدة للتصدير النظيف
+      let text = cell.innerText.replace(/\n/g, ' ').replace(/"/g, '""');
+      cols.push(`"${text}"`);
+    });
+    if (cols.length) rows.push(cols.join(','));
+  });
+
+  const csvContent = '\uFEFF' + rows.join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = (filename || 'ProFab_Report') + '_' + Date.now() + '.csv';
+  link.click();
+  toast('تم تصدير التقرير إلى ملف Excel بنجاح ✓', 'success');
+}
+
+function printTableReport(title) {
+  window.print();
+}
+
+/* ====== البحث الفوري والتصفية الموحدة (Universal Live Search) ====== */
+function attachTableSearch(inputId, tableContainerId) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+
+  input.addEventListener('input', () => {
+    const query = input.value.toLowerCase().trim();
+    const container = document.getElementById(tableContainerId);
+    if (!container) return;
+
+    container.querySelectorAll('tbody tr').forEach(row => {
+      const text = row.innerText.toLowerCase();
+      row.style.display = text.includes(query) ? '' : 'none';
+    });
+  });
+}
+
 /* ====== تسجيل الدخول وتحديد الصلاحيات ====== */
 async function handleLogin(e) {
   e.preventDefault();
@@ -163,18 +250,21 @@ async function handleLogin(e) {
     btn.disabled = false;
     btn.textContent = 'تسجيل الدخول';
     
-    // التحقق المحلي مع إمكانية تجربة الخادم
     if (match && (match.pass === password || password === '123456')) {
       setSession({ role: match.role, account: match.account, branch: match.branch });
+      logActivity(`قام المستخدم [${match.account}] بتسجيل الدخول`);
       renderApp();
     } else {
       setSession({ role: account, account: account, branch: 'جدة' });
+      logActivity(`قام المستخدم [${account}] بتسجيل الدخول`);
       renderApp();
     }
-  }, 400);
+  }, 350);
 }
 
 function handleLogout() {
+  const session = getSession();
+  if (session) logActivity(`قام [${session.account || session.role}] بتسجيل الخروج`);
   clearSession();
   renderApp();
 }
@@ -196,7 +286,6 @@ function renderApp() {
   document.getElementById('whoAmI').textContent = session.account || session.role;
   document.getElementById('whoRoleBadge').textContent = session.role;
 
-  // إعداد القائمة الجانبية بالأنظمة المتاحة بناء على الدور الوظيفي
   const nav = document.getElementById('sidebarNav');
   const modules = getModulesForRole(session.role);
   
@@ -214,7 +303,6 @@ function renderApp() {
     });
   });
 
-  // تحميل المديول الأول افتراضياً
   if (modules.length > 0) {
     loadModule(modules[0].id);
   }
@@ -259,17 +347,17 @@ function loadModule(moduleId) {
 }
 
 /* ==========================================================================
-   1️⃣ مديول خدمة العملاء (WhatsApp CRM System)
+   1️⃣ مديول قسم خدمة العملاء (WhatsApp CRM System)
    ========================================================================== */
 
 function getCrmTickets() {
   const cached = getCache('crm_tickets');
   if (cached) return cached;
-  // بيانات افتراضية تجريبية للبدء
   return [
     {
       id: 'TICK-101',
       customer: 'شركة الأفق للمقاولات',
+      phone: '0501234567',
       address: 'جدة - حي الصفا - شارع الأمل',
       permitNo: 'FS-98421',
       problem: 'توقف مفاجئ في بوابة الهيكل الهيدروليكي وجود تسريب بسيط.',
@@ -288,16 +376,28 @@ async function renderCrmModule(content) {
   content.innerHTML = `
     <div class="kpi-grid">
       <div class="kpi-card blue">
-        <div><div class="kpi-title">إجمالي طلبات الواتساب</div><div class="kpi-value" id="kpiCrmTotal">0</div></div>
-        <div style="font-size:28px">📱</div>
+        <div>
+          <div class="kpi-title">إجمالي بلاغات الواتساب</div>
+          <div class="kpi-value" id="kpiCrmTotal">0</div>
+          <div class="kpi-progress"><div class="kpi-progress-bar" style="width:100%"></div></div>
+        </div>
+        <div style="font-size:32px">📱</div>
       </div>
       <div class="kpi-card">
-        <div><div class="kpi-title">محول للصيانة</div><div class="kpi-value" id="kpiCrmTransferred">0</div></div>
-        <div style="font-size:28px">🚚</div>
+        <div>
+          <div class="kpi-title">محول للصيانة</div>
+          <div class="kpi-value" id="kpiCrmTransferred">0</div>
+          <div class="kpi-progress"><div class="kpi-progress-bar" style="width:65%"></div></div>
+        </div>
+        <div style="font-size:32px">🚚</div>
       </div>
       <div class="kpi-card green">
-        <div><div class="kpi-title">تم حل المشكلة</div><div class="kpi-value" id="kpiCrmSolved">0</div></div>
-        <div style="font-size:28px">✅</div>
+        <div>
+          <div class="kpi-title">تم حل المشكلة</div>
+          <div class="kpi-value" id="kpiCrmSolved">0</div>
+          <div class="kpi-progress"><div class="kpi-progress-bar" style="width:85%;background:var(--accent-green)"></div></div>
+        </div>
+        <div style="font-size:32px">✅</div>
       </div>
     </div>
 
@@ -310,11 +410,15 @@ async function renderCrmModule(content) {
             <input type="text" id="crmCustomer" placeholder="أدخل اسم العميل" required>
           </div>
           <div class="field">
+            <label>رقم جوال العميل (للواتساب)</label>
+            <input type="text" id="crmPhone" placeholder="مثال: 0501234567" required>
+          </div>
+          <div class="field">
             <label>العنوان / الموقع</label>
             <input type="text" id="crmAddress" placeholder="المدينة، الحي، اسم الشارع" required>
           </div>
           <div class="field">
-            <label>رقم الفسح</label>
+            <label>رقم الفسح الرسمى</label>
             <input type="text" id="crmPermitNo" placeholder="أدخل رقم الفسح الرسمى" required>
           </div>
         </div>
@@ -324,7 +428,7 @@ async function renderCrmModule(content) {
             <textarea id="crmProblem" rows="2" placeholder="اكتب شرح المشكلة كما وردت من العميل..." required></textarea>
           </div>
           <div class="field" style="flex:1">
-            <label>صورة المشكلة (اختر صورة)</label>
+            <label>صورة المشكلة (اختياري)</label>
             <input type="file" id="crmImageInput" accept="image/*">
           </div>
         </div>
@@ -333,7 +437,18 @@ async function renderCrmModule(content) {
     </div>
 
     <div class="card">
-      <h2>📋 داشبورد متابعة طلبات العملاء وحالة الصيانة</h2>
+      <h2>
+        <span>📋 داشبورد متابعة طلبات العملاء وحالة الصيانة</span>
+        <button class="btn-secondary" onclick="exportTableToCsv('crmTable', 'تقرير_خدمة_العملاء')">📥 تصدير Excel</button>
+      </h2>
+
+      <div class="toolbar">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="crmSearchInput" placeholder="بحث باسم العميل، رقم التذكرة، أو رقم الفسح...">
+        </div>
+      </div>
+
       <div id="crmTicketsWrap" class="table-wrap"><div class="empty-state">جاري تحميل البلاغات...</div></div>
     </div>
   `;
@@ -341,13 +456,13 @@ async function renderCrmModule(content) {
   document.getElementById('crmTicketForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const fileInput = document.getElementById('crmImageInput');
-    let imgData = 'assets/logo.png';
 
     const saveTicket = (imgUrl) => {
       const tickets = getCrmTickets();
       const newTicket = {
         id: 'TICK-' + Math.floor(1000 + Math.random() * 9000),
         customer: document.getElementById('crmCustomer').value,
+        phone: document.getElementById('crmPhone').value || '0500000000',
         address: document.getElementById('crmAddress').value,
         permitNo: document.getElementById('crmPermitNo').value,
         problem: document.getElementById('crmProblem').value,
@@ -357,6 +472,7 @@ async function renderCrmModule(content) {
       };
       tickets.unshift(newTicket);
       saveCrmTickets(tickets);
+      logActivity(`قسم خدمة العملاء: إنشاء تذكرة جديدة [${newTicket.id}] للعميل (${newTicket.customer})`);
       apiCall('saveCrmTicket', newTicket).catch(() => {});
       toast('تم إرسال الطلب بنجاح وتحويله لقسم الصيانة ✓', 'success');
       e.target.reset();
@@ -368,10 +484,11 @@ async function renderCrmModule(content) {
       reader.onload = (ev) => saveTicket(ev.target.result);
       reader.readAsDataURL(fileInput.files[0]);
     } else {
-      saveTicket(imgData);
+      saveTicket('assets/logo.png');
     }
   });
 
+  attachTableSearch('crmSearchInput', 'crmTicketsWrap');
   loadCrmTickets();
 }
 
@@ -381,7 +498,6 @@ function loadCrmTickets() {
 
   const tickets = getCrmTickets();
 
-  // تحديث الـ KPIs
   document.getElementById('kpiCrmTotal').textContent = tickets.length;
   document.getElementById('kpiCrmTransferred').textContent = tickets.filter(t => t.status.includes('محول')).length;
   document.getElementById('kpiCrmSolved').textContent = tickets.filter(t => t.status.includes('تم حل')).length;
@@ -391,19 +507,23 @@ function loadCrmTickets() {
     return;
   }
 
-  wrap.innerHTML = `<table><thead><tr>
-    <th>رقم التذكرة</th><th>اسم العميل</th><th>العنوان</th><th>رقم الفسح</th><th>تفاصيل المشكلة</th><th>الصورة</th><th>حالة الصيانة</th>
-  </tr></thead><tbody>${tickets.map(t => `
-    <tr>
-      <td><b>${t.id}</b></td>
-      <td>${t.customer}</td>
-      <td>${t.address}</td>
-      <td><span class="badge" style="background:#eef2ff;color:#4338ca">${t.permitNo}</span></td>
-      <td style="max-width:220px;white-space:normal">${t.problem}</td>
-      <td><img src="${t.image}" class="img-thumb" onclick="previewImage('${t.image}')" alt="الصورة"></td>
-      <td>${statusBadge(t.status)}</td>
-    </tr>
-  `).join('')}</tbody></table>`;
+  wrap.innerHTML = `<table id="crmTable"><thead><tr>
+    <th>رقم التذكرة</th><th>اسم العميل</th><th>تواصل واتساب</th><th>العنوان</th><th>رقم الفسح</th><th>تفاصيل المشكلة</th><th>الصورة</th><th>حالة الصيانة</th>
+  </tr></thead><tbody>${tickets.map(t => {
+    const waPhone = (t.phone || '').replace(/\D/g, '');
+    const waUrl = waPhone ? `https://wa.me/966${waPhone.startsWith('0') ? waPhone.slice(1) : waPhone}` : '#';
+    return `
+      <tr>
+        <td><b>${t.id}</b></td>
+        <td>${t.customer}</td>
+        <td><a href="${waUrl}" target="_blank" class="whatsapp-link">💬 <span>${t.phone || 'واتساب'}</span></a></td>
+        <td>${t.address}</td>
+        <td><span class="badge" style="background:rgba(99,102,241,0.15);color:#6366f1">${t.permitNo}</span></td>
+        <td style="max-width:220px;white-space:normal">${t.problem}</td>
+        <td><img src="${t.image}" class="img-thumb" onclick="previewImage('${t.image}')" alt="الصورة"></td>
+        <td>${statusBadge(t.status)}</td>
+      </tr>`;
+  }).join('')}</tbody></table>`;
 }
 
 function previewImage(src) {
@@ -421,25 +541,49 @@ async function renderMaintenanceModule(content) {
   content.innerHTML = `
     <div class="kpi-grid">
       <div class="kpi-card purple">
-        <div><div class="kpi-title">بلاغات الصيانة الواردة</div><div class="kpi-value" id="kpiMaintTotal">0</div></div>
-        <div style="font-size:28px">🛠️</div>
+        <div>
+          <div class="kpi-title">بلاغات الصيانة الواردة</div>
+          <div class="kpi-value" id="kpiMaintTotal">0</div>
+          <div class="kpi-progress"><div class="kpi-progress-bar" style="width:100%;background:var(--accent-purple)"></div></div>
+        </div>
+        <div style="font-size:32px">🛠️</div>
       </div>
       <div class="kpi-card blue">
-        <div><div class="kpi-title">مواعيد الزيارة المحددة</div><div class="kpi-value" id="kpiMaintScheduled">0</div></div>
-        <div style="font-size:28px">📅</div>
+        <div>
+          <div class="kpi-title">مواعيد الزيارة المحددة</div>
+          <div class="kpi-value" id="kpiMaintScheduled">0</div>
+          <div class="kpi-progress"><div class="kpi-progress-bar" style="width:70%;background:var(--accent-blue)"></div></div>
+        </div>
+        <div style="font-size:32px">📅</div>
       </div>
       <div class="kpi-card green">
-        <div><div class="kpi-title">إصلاحات مكتملة</div><div class="kpi-value" id="kpiMaintSolved">0</div></div>
-        <div style="font-size:28px">✅</div>
+        <div>
+          <div class="kpi-title">إصلاحات مكتملة</div>
+          <div class="kpi-value" id="kpiMaintSolved">0</div>
+          <div class="kpi-progress"><div class="kpi-progress-bar" style="width:90%;background:var(--accent-green)"></div></div>
+        </div>
+        <div style="font-size:32px">✅</div>
       </div>
     </div>
 
     <div class="card">
-      <h2>🛠️ بلاغات الصيانة الواردة من خدمة العملاء (الواتس اب)</h2>
+      <h2>
+        <span>🛠️ بلاغات الصيانة الواردة من قسم خدمة العملاء</span>
+        <button class="btn-secondary" onclick="exportTableToCsv('maintTable', 'تقرير_قسم_الصيانة')">📥 تصدير Excel</button>
+      </h2>
+
+      <div class="toolbar">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="maintSearchInput" placeholder="بحث برقم التذكرة، اسم العميل، أو الفسح...">
+        </div>
+      </div>
+
       <div id="maintWrap" class="table-wrap"><div class="empty-state">جاري تحميل جدول الصيانة...</div></div>
     </div>
   `;
 
+  attachTableSearch('maintSearchInput', 'maintWrap');
   loadMaintenanceTickets();
 }
 
@@ -458,13 +602,13 @@ function loadMaintenanceTickets() {
     return;
   }
 
-  wrap.innerHTML = `<table><thead><tr>
+  wrap.innerHTML = `<table id="maintTable"><thead><tr>
     <th>التذكرة</th><th>العميل والموقع</th><th>رقم الفسح</th><th>المشكلة</th><th>الصورة</th><th>الحالة الحالية</th><th>الإجراء المتاح لفني الصيانة</th>
   </tr></thead><tbody>${tickets.map(t => `
     <tr data-id="${t.id}">
       <td><b>${t.id}</b></td>
-      <td><b>${t.customer}</b><br><small style="color:#666">${t.address}</small></td>
-      <td><span class="badge" style="background:#eef2ff;color:#4338ca">${t.permitNo}</span></td>
+      <td><b>${t.customer}</b><br><small style="color:var(--text-muted)">${t.address}</small></td>
+      <td><span class="badge" style="background:rgba(99,102,241,0.15);color:#6366f1">${t.permitNo}</span></td>
       <td style="max-width:200px;white-space:normal">${t.problem}</td>
       <td><img src="${t.image}" class="img-thumb" onclick="previewImage('${t.image}')"></td>
       <td>${statusBadge(t.status)}</td>
@@ -488,6 +632,7 @@ function loadMaintenanceTickets() {
 
     tr.querySelector('.solveBtn').addEventListener('click', () => {
       updateTicketStatus(id, '✅ تم حل المشكلة بنجاح');
+      logActivity(`قسم الصيانة: تم حل المشكلة بنجاح للبلاغ رقم [${id}]`);
     });
 
     tr.querySelector('.unsolveBtn').addEventListener('click', () => {
@@ -510,7 +655,7 @@ function updateTicketStatus(ticketId, newStatus) {
 }
 
 /* ==========================================================================
-   3️⃣ مديول الموارد البشرية (HR System)
+   3️⃣ مديول قسم الموارد البشرية (HR System)
    ========================================================================== */
 
 function getEmployees() {
@@ -539,7 +684,10 @@ async function renderHrModule(content) {
 
     <div id="tabEmployees" class="tab-panel">
       <div class="card">
-        <h2>👥 دليل الموظفين المسجلين بالنظام</h2>
+        <h2>
+          <span>👥 دليل الموظفين المسجلين بالنظام</span>
+          <button class="btn-secondary" onclick="exportTableToCsv('empTable', 'دليل_الموظفين')">📥 تصدير Excel</button>
+        </h2>
         <div id="empWrap" class="table-wrap"><div class="empty-state">جاري التحميل...</div></div>
       </div>
     </div>
@@ -575,7 +723,10 @@ async function renderHrModule(content) {
       </div>
 
       <div class="card">
-        <h2>سجل طلبات الإجازات</h2>
+        <h2>
+          <span>سجل طلبات الإجازات</span>
+          <button class="btn-secondary" onclick="exportTableToCsv('leaveTable', 'سجل_الإجازات')">📥 تصدير Excel</button>
+        </h2>
         <div id="leaveWrap" class="table-wrap"><div class="empty-state">جاري التحميل...</div></div>
       </div>
     </div>
@@ -596,6 +747,7 @@ async function renderHrModule(content) {
     };
     leaves.unshift(newLeave);
     setCache('hr_leaves', leaves);
+    logActivity(`قسم الموارد البشرية: تقديم طلب إجازة جديد للموظف (${newLeave.employee})`);
     toast('تم إرسال طلب الإجازة للمراجعة ✓', 'success');
     e.target.reset();
     loadLeaves();
@@ -609,7 +761,7 @@ function loadEmployees() {
   const wrap = document.getElementById('empWrap');
   if (!wrap) return;
   const emps = getEmployees();
-  wrap.innerHTML = `<table><thead><tr><th>رقم الموظف</th><th>الاسم</th><th>المسمى الوظيفي</th><th>الفرع</th><th>رقم التواصل</th></tr></thead>
+  wrap.innerHTML = `<table id="empTable"><thead><tr><th>رقم الموظف</th><th>الاسم</th><th>المسمى الوظيفي</th><th>الفرع</th><th>رقم التواصل</th></tr></thead>
   <tbody>${emps.map(e => `<tr><td>${e.id}</td><td><b>${e.name}</b></td><td>${e.role}</td><td>${e.branch}</td><td>${e.phone}</td></tr>`).join('')}</tbody></table>`;
 }
 
@@ -617,21 +769,37 @@ function loadLeaves() {
   const wrap = document.getElementById('leaveWrap');
   if (!wrap) return;
   const leaves = getLeaves();
-  wrap.innerHTML = `<table><thead><tr><th>رقم الطلب</th><th>الموظف</th><th>نوع الإجازة</th><th>الفترة</th><th>الحالة</th></tr></thead>
+  wrap.innerHTML = `<table id="leaveTable"><thead><tr><th>رقم الطلب</th><th>الموظف</th><th>نوع الإجازة</th><th>الفترة</th><th>الحالة</th></tr></thead>
   <tbody>${leaves.map(l => `<tr><td>${l.id}</td><td>${l.employee}</td><td>${l.type}</td><td>من ${l.start} إلى ${l.end}</td><td>${statusBadge(l.status)}</td></tr>`).join('')}</tbody></table>`;
 }
 
 /* ==========================================================================
-   4️⃣ مديول إدارة الموظفين والأدوار (RBAC Manager Dashboard)
+   4️⃣ مديول إدارة الموظفين والصلاحيات (RBAC Manager Dashboard)
    ========================================================================== */
 
 async function renderRbacModule(content) {
+  const activities = getActivities();
+
   content.innerHTML = `
     <div class="card">
-      <h2>👑 إدارة الحسابات والأدوار الوظيفية (RBAC) 
+      <h2>
+        <span>👑 إدارة الحسابات والأدوار الوظيفية (RBAC)</span>
         <button class="btn-primary" id="openAddUserBtn">+ إضافة حساب موظف جديد</button>
       </h2>
       <div id="usersWrap" class="table-wrap"><div class="empty-state">جاري التحميل...</div></div>
+    </div>
+
+    <div class="card">
+      <h2>⚡ سجل الأنشطة والإجراءات الحية للنظام (Live Activity Audit Stream)</h2>
+      <div class="activity-list">
+        ${activities.map(a => `
+          <div class="activity-item">
+            <span>📌</span>
+            <span>${a.text}</span>
+            <span class="activity-time">${a.time}</span>
+          </div>
+        `).join('')}
+      </div>
     </div>
   `;
 
@@ -661,7 +829,7 @@ function loadUsersTable() {
 }
 
 /* ==========================================================================
-   5️⃣ مديول المشتريات المتكامل (Purchasing Module)
+   5️⃣ مديول قسم المشتريات المتكامل (Purchasing Module)
    ========================================================================== */
 
 async function renderFullPurchasingView(content) {
@@ -674,7 +842,10 @@ async function renderFullPurchasingView(content) {
     </div>
     <div id="tabPending" class="tab-panel">
       <div class="card">
-        <h2>الطلبات الجديدة <small>بانتظار تحديد السعر والمورد أو الإزالة</small></h2>
+        <h2>
+          <span>الطلبات الجديدة <small>بانتظار تحديد السعر والمورد أو الإزالة</small></span>
+          <button class="btn-secondary" onclick="exportTableToCsv('purchasingPendingTable', 'طلبات_المشتريات_الجديدة')">📥 تصدير Excel</button>
+        </h2>
         <div id="pendingWrap" class="table-wrap"><div class="empty-state">جاري التحميل...</div></div>
       </div>
     </div>
@@ -689,7 +860,7 @@ async function renderFullPurchasingView(content) {
       </div>
     </div>
     <div id="tabFinance" class="tab-panel hidden">
-      <div class="card"><h2>سجل المالية <small>خاص بموظف المشتريات والإدارة</small></h2>
+      <div class="card"><h2>سجل المالية <small>خاص بقسم المشتريات والإدارة</small></h2>
         <div id="financeWrap" class="table-wrap"><div class="empty-state">جاري التحميل...</div></div>
       </div>
     </div>
@@ -783,6 +954,7 @@ async function renderFactoryPurchasing(content, branch) {
       const result = await apiCall('submitRequest', payload);
       if (result.success) {
         toast('تم إرسال الطلب بنجاح ✓', 'success');
+        logActivity(`${branch}: إنشاء طلب شراء جديد لمادة (${payload.material})`);
         e.target.reset();
         loadMyRequests(branch);
       }
@@ -809,7 +981,7 @@ async function loadPendingForPurchasing(materials, suppliers) {
 
     const supplierOptions = suppliers.map(s => `<option value="${s['اسم المورد']}">${s['اسم المورد']}</option>`).join('');
 
-    wrap.innerHTML = `<table><thead><tr>
+    wrap.innerHTML = `<table id="purchasingPendingTable"><thead><tr>
       <th>رقم الطلب</th><th>الفرع</th><th>المادة</th><th>الكمية</th><th>المورد</th><th>السعر</th><th> الإجراء</th>
     </tr></thead><tbody>${rows.map(r => `
       <tr data-id="${r['رقم الطلب']}">
@@ -836,6 +1008,7 @@ async function loadPendingForPurchasing(materials, suppliers) {
         const result = await apiCall('setPrice', { requestId: id, supplier: supplier, price: price });
         if (result.success) {
           toast('تم إرسال الطلب للمدير ✓', 'success');
+          logActivity(`قسم المشتريات: تحديد سعر الطلب [${id}] بمبلغ (${price} ريال)`);
           if (typeof window.refreshCurrentView === 'function') window.refreshCurrentView();
         }
       });
@@ -844,6 +1017,7 @@ async function loadPendingForPurchasing(materials, suppliers) {
         if (!confirm(`هل أنت تأكد من إزالة الطلب رقم (${id})؟`)) return;
         tr.remove();
         await apiCall('decideRequest', { requestId: id, decision: 'مرفوض', note: 'تمت الإزالة بواسطة المشتريات' });
+        logActivity(`قسم المشتريات: إزالة الطلب رقم [${id}]`);
         toast('تمت إزالة الطلب بنجاح ✓', 'success');
         if (typeof window.refreshCurrentView === 'function') window.refreshCurrentView();
       });
@@ -902,6 +1076,7 @@ async function decide(requestId, decision, note) {
   const result = await apiCall('decideRequest', { requestId: requestId, decision: decision, note: note || '' });
   if (result.success) {
     toast(decision === 'تمت الموافقة' ? 'تمت الموافقة على الطلب ✓' : 'تم رفض الطلب', 'success');
+    logActivity(`الإدارة: اتخاذ قرار (${decision}) للطلب رقم [${requestId}]`);
     if (typeof window.refreshCurrentView === 'function') window.refreshCurrentView();
   }
 }
@@ -954,7 +1129,7 @@ async function loadSuppliers() {
   return new Promise(r => fetchWithCache('suppliers', 'getSuppliers', {}, data => r(data || [])));
 }
 
-/* ====== إدارة التبويبات والمودالات العامين ====== */
+/* ====== إدارة التبويبات والمودالات العامة ====== */
 function setupTabs() {
   const tabBtns = document.querySelectorAll('.tab-btn');
   tabBtns.forEach(btn => {
@@ -969,14 +1144,12 @@ function setupTabs() {
 }
 
 function setupModals() {
-  // إغلاق المودالات
   document.querySelectorAll('.closeModalBtn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
     });
   });
 
-  // نموذج تحديد موعد الصيانة
   document.getElementById('scheduleForm').addEventListener('submit', (e) => {
     e.preventDefault();
     const id = document.getElementById('scheduleTicketId').value;
@@ -986,11 +1159,11 @@ function setupModals() {
 
     const statusText = `📅 موعد زيارة: ${date} (${time}) - ${tech}`;
     updateTicketStatus(id, statusText);
+    logActivity(`قسم الصيانة: تحديد موعد زيارة البلاغ [${id}] بتاريخ (${date} - ${time})`);
     document.getElementById('scheduleModal').classList.add('hidden');
     e.target.reset();
   });
 
-  // نموذج عدم حل المشكلة
   document.getElementById('unresolvedForm').addEventListener('submit', (e) => {
     e.preventDefault();
     const id = document.getElementById('unresolvedTicketId').value;
@@ -998,11 +1171,11 @@ function setupModals() {
 
     const statusText = `⚠️ لم تحل المشكلة: ${notes}`;
     updateTicketStatus(id, statusText);
+    logActivity(`قسم الصيانة: تسجيل ملاحظة عدم حل المشكلة للبلاغ [${id}]`);
     document.getElementById('unresolvedModal').classList.add('hidden');
     e.target.reset();
   });
 
-  // نموذج إضافة موظف جديد (للمدير)
   document.getElementById('addUserForm').addEventListener('submit', (e) => {
     e.preventDefault();
     const users = getUsers();
@@ -1015,14 +1188,14 @@ function setupModals() {
     users.push(newUser);
     saveUsers(users);
 
-    // إضافة الحساب للقائمة المنسدلة في شاشة تسجيل الدخول
     const select = document.getElementById('accountSelect');
     const opt = document.createElement('option');
     opt.value = newUser.account;
     opt.textContent = `${newUser.account} (${newUser.role})`;
     select.appendChild(opt);
 
-    toast('تمت إضافة حساب الموظف الجديد وتعيين الصلاحية بنجاح ✓', 'success');
+    logActivity(`إدارة الموظفين: إنشاء حساب جديد للموظف (${newUser.account}) بدور (${newUser.role})`);
+    toast('تمت إضافة حساب الموظف الجديد وتعين الصلاحية بنجاح ✓', 'success');
     document.getElementById('addUserModal').classList.add('hidden');
     e.target.reset();
     loadUsersTable();
@@ -1031,10 +1204,10 @@ function setupModals() {
 
 /* ====== بدء تشغيل المنصة ====== */
 document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
   document.getElementById('loginForm').addEventListener('submit', handleLogin);
   document.getElementById('logoutBtn').addEventListener('click', handleLogout);
 
-  // تعبئة خيارات الحسابات ديناميكياً
   const users = getUsers();
   const select = document.getElementById('accountSelect');
   select.innerHTML = users.map(u => `<option value="${u.account}">${u.account} (${u.role})</option>`).join('');

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pro Fab Enterprise | المنصة الإدارية المتكاملة</title>
+<title>Pro Fab Enterprise | المنصة الإدارية المتكاملة الفائقة</title>
 <link rel="icon" href="assets/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -47,9 +47,11 @@
   <header class="app-header">
     <div class="brand">
       <img src="assets/logo.png" alt="Pro Fab">
-      <div class="brand-text">Pro Fab Enterprise<span>نظام الإدارة والتشغيل المتكامل</span></div>
+      <div class="brand-text">Pro Fab Enterprise<span>نظام الإدارة والتشغيل المتكامل الفائق</span></div>
     </div>
     <div class="user-control">
+      <!-- زر التبديل بين الثيم الداكن والفاتح -->
+      <button id="themeToggleBtn" class="theme-toggle-btn" title="تبديل الثيم">🌙 الوضع الداكن</button>
       <span class="who">مرحباً، <b id="whoAmI"></b> <span id="whoRoleBadge" class="badge-role"></span></span>
       <button class="logout-btn" id="logoutBtn">تسجيل الخروج</button>
     </div>
@@ -58,7 +60,7 @@
   <div class="app-body">
     <!-- الشريط الجانبي للتنقل بين الأنظمة -->
     <aside class="sidebar">
-      <div class="sidebar-title">الأنظمة المتاحة</div>
+      <div class="sidebar-title">أقسام المنصة الإدارية</div>
       <nav class="sidebar-nav" id="sidebarNav">
         <!-- سيتم تعبئة الأزرار ديناميكياً حسب الصلاحيات -->
       </nav>
@@ -129,10 +131,10 @@
       <div class="field">
         <label>الدور الوظيفي والصلاحية</label>
         <select id="newUserRole" required>
-          <option value="خدمة العملاء">خدمة العملاء (WhatsApp CRM)</option>
-          <option value="فريق الصيانة">فريق الصيانة (Maintenance)</option>
-          <option value="الموارد البشرية">الموارد البشرية (HR)</option>
-          <option value="موظف المشتريات">موظف المشتريات</option>
+          <option value="قسم خدمة العملاء">قسم خدمة العملاء</option>
+          <option value="قسم الصيانة">قسم الصيانة</option>
+          <option value="قسم الموارد البشرية">قسم الموارد البشرية</option>
+          <option value="قسم المشتريات">قسم المشتريات</option>
           <option value="مصنع جدة">مصنع جدة</option>
           <option value="مصنع الرياض">مصنع الرياض</option>
           <option value="المدير">المدير العام</option>
@@ -158,7 +160,7 @@
 <div id="imageModal" class="modal-overlay hidden">
   <div class="modal-card" style="max-width: 600px; text-align: center;">
     <h3>📷 معاينة صورة المشكلة</h3>
-    <img id="imageModalPreview" src="" alt="معاينة الصورة" style="width: 100%; max-height: 400px; object-fit: contain; border-radius: 8px; margin: 12px 0;">
+    <img id="imageModalPreview" src="" alt="معاينة الصورة" style="width: 100%; max-height: 400px; object-fit: contain; border-radius: 12px; margin: 12px 0;">
     <div class="modal-actions" style="justify-content: center;">
       <button type="button" class="btn-secondary closeModalBtn">إغلاق</button>
     </div>
@@ -167,6 +169,6 @@
 
 <div id="toast" class="toast"></div>
 
-<script src="app.js?v=5"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>
