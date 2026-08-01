@@ -213,11 +213,11 @@ html[dir="ltr"] .search-icon { right: auto; left: 12px; }
 }
 .app-header .brand { display: flex; align-items: center; gap: 16px; }
 .app-header .brand img { 
-  height: 82px; 
-  max-height: 90px;
+  height: 115px; 
+  max-height: 130px;
   width: auto;
   object-fit: contain;
-  filter: drop-shadow(0 4px 14px rgba(255, 159, 28, 0.4)) drop-shadow(0 3px 10px rgba(0,0,0,0.7));
+  filter: drop-shadow(0 6px 18px rgba(255, 159, 28, 0.55)) drop-shadow(0 4px 12px rgba(0,0,0,0.8));
   transition: transform .25s ease, filter .25s ease;
 }
 .app-header .brand img:hover { transform: scale(1.06); }
