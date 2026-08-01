@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pro Fab | نظام المشتريات</title>
+<title>Pro Fab Enterprise | المنصة الإدارية المتكاملة</title>
 <link rel="icon" href="assets/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -17,45 +17,156 @@
 <div id="loginScreen" class="login-wrap">
   <div class="login-card">
     <img src="assets/logo.png" alt="Pro Fab">
-    <h1>نظام المشتريات</h1>
+    <h1>المنصة الإدارية المتكاملة</h1>
     <p class="subtitle">Pro Fab · Professional Fabrication</p>
     <div id="loginError" class="error-msg hidden"></div>
     <form id="loginForm">
       <div class="field">
-        <label>الحساب</label>
+        <label>اختيار الحساب / الدور الوظيفي</label>
         <select id="accountSelect" required>
+          <option value="المدير">المدير (كامل الصلاحيات)</option>
+          <option value="قسم المشتريات">قسم المشتريات</option>
+          <option value="قسم خدمة العملاء">قسم خدمة العملاء</option>
+          <option value="قسم الصيانة">قسم الصيانة</option>
+          <option value="قسم الموارد البشرية">قسم الموارد البشرية</option>
           <option value="مصنع جدة">مصنع جدة</option>
           <option value="مصنع الرياض">مصنع الرياض</option>
-          <option value="موظف المشتريات">موظف المشتريات</option>
-          <option value="المدير">المدير</option>
         </select>
       </div>
       <div class="field">
         <label>كلمة المرور</label>
-        <input type="password" id="passwordInput" required>
+        <input type="password" id="passwordInput" placeholder="أدخل كلمة المرور" required>
       </div>
       <button type="submit" class="btn-primary" id="loginBtn">تسجيل الدخول</button>
     </form>
   </div>
 </div>
 
-<!-- شاشة التطبيق -->
+<!-- شاشة التطبيق الرئيسية -->
 <div id="appScreen" class="hidden">
   <header class="app-header">
     <div class="brand">
       <img src="assets/logo.png" alt="Pro Fab">
-      <div class="brand-text">نظام المشتريات<span>Pro Fab Purchasing</span></div>
+      <div class="brand-text">Pro Fab Enterprise<span>نظام الإدارة والتشغيل المتكامل</span></div>
     </div>
-    <div style="display:flex;align-items:center;gap:14px">
-      <span class="who">مرحباً، <b id="whoAmI"></b></span>
+    <div class="user-control">
+      <span class="who">مرحباً، <b id="whoAmI"></b> <span id="whoRoleBadge" class="badge-role"></span></span>
       <button class="logout-btn" id="logoutBtn">تسجيل الخروج</button>
     </div>
   </header>
-  <div class="container" id="appContent"></div>
+
+  <div class="app-body">
+    <!-- الشريط الجانبي للتنقل بين الأنظمة -->
+    <aside class="sidebar">
+      <div class="sidebar-title">الأنظمة المتاحة</div>
+      <nav class="sidebar-nav" id="sidebarNav">
+        <!-- سيتم تعبئة الأزرار ديناميكياً حسب الصلاحيات -->
+      </nav>
+    </aside>
+
+    <!-- المحتوى الرئيسي للمديولات -->
+    <main class="main-content" id="appContent">
+      <!-- يتم تحميل المديول المختار هنا -->
+    </main>
+  </div>
+</div>
+
+<!-- النوافذ المنبثقة (Modals) -->
+
+<!-- نافذة تحديد موعد زيارة الصيانة -->
+<div id="scheduleModal" class="modal-overlay hidden">
+  <div class="modal-card">
+    <h3>🛠️ تحديد موعد زيارة فريق الصيانة للموقع</h3>
+    <form id="scheduleForm">
+      <input type="hidden" id="scheduleTicketId">
+      <div class="field">
+        <label>تاريخ الموعد</label>
+        <input type="date" id="scheduleDate" required>
+      </div>
+      <div class="field">
+        <label>توقيت الموعد</label>
+        <input type="time" id="scheduleTime" required>
+      </div>
+      <div class="field">
+        <label>اسم الفني / الفريق المسؤول</label>
+        <input type="text" id="scheduleTech" placeholder="مثال: م. أحمد وفريق الصيانة" required>
+      </div>
+      <div class="modal-actions">
+        <button type="submit" class="btn-primary">تأكيد الموعد وإشعار العملاء</button>
+        <button type="button" class="btn-secondary closeModalBtn">إلغاء</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- نافذة تسجيل عدم حل المشكلة مع الملاحظات -->
+<div id="unresolvedModal" class="modal-overlay hidden">
+  <div class="modal-card">
+    <h3>⚠️ ملاحظات عدم حل المشكلة</h3>
+    <form id="unresolvedForm">
+      <input type="hidden" id="unresolvedTicketId">
+      <div class="field">
+        <label>سبب عدم الحل وملاحظات فني الصيانة</label>
+        <textarea id="unresolvedNotes" rows="4" placeholder="اكتب التفاصيل هنا (مثال: بانتظار استيراد قطع غيار إضافية أو الحاجة لزيارة موقعية ثانية...)" required></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="submit" class="btn-danger">حفظ وتحديث التقرير</button>
+        <button type="button" class="btn-secondary closeModalBtn">إلغاء</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- نافذة إضافة موظف / حساب جديد (للمدير) -->
+<div id="addUserModal" class="modal-overlay hidden">
+  <div class="modal-card">
+    <h3>👤 إضافة حساب موظف / دور وظيفي جديد</h3>
+    <form id="addUserForm">
+      <div class="field">
+        <label>اسم الحساب / الموظف</label>
+        <input type="text" id="newUserName" placeholder="مثال: موظف المشتريات 2" required>
+      </div>
+      <div class="field">
+        <label>الدور الوظيفي والصلاحية</label>
+        <select id="newUserRole" required>
+          <option value="خدمة العملاء">خدمة العملاء (WhatsApp CRM)</option>
+          <option value="فريق الصيانة">فريق الصيانة (Maintenance)</option>
+          <option value="الموارد البشرية">الموارد البشرية (HR)</option>
+          <option value="موظف المشتريات">موظف المشتريات</option>
+          <option value="مصنع جدة">مصنع جدة</option>
+          <option value="مصنع الرياض">مصنع الرياض</option>
+          <option value="المدير">المدير العام</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>الفرع / الموقع</label>
+        <input type="text" id="newUserBranch" placeholder="جدة، الرياض، الإدارة العامة" required>
+      </div>
+      <div class="field">
+        <label>كلمة المرور</label>
+        <input type="password" id="newUserPassword" placeholder="أدخل كلمة مرور للحساب" required>
+      </div>
+      <div class="modal-actions">
+        <button type="submit" class="btn-primary">إنشاء الحساب</button>
+        <button type="button" class="btn-secondary closeModalBtn">إلغاء</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- نافذة معاينة صورة المشكلة -->
+<div id="imageModal" class="modal-overlay hidden">
+  <div class="modal-card" style="max-width: 600px; text-align: center;">
+    <h3>📷 معاينة صورة المشكلة</h3>
+    <img id="imageModalPreview" src="" alt="معاينة الصورة" style="width: 100%; max-height: 400px; object-fit: contain; border-radius: 8px; margin: 12px 0;">
+    <div class="modal-actions" style="justify-content: center;">
+      <button type="button" class="btn-secondary closeModalBtn">إغلاق</button>
+    </div>
+  </div>
 </div>
 
 <div id="toast" class="toast"></div>
 
-<script src="app.js"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>
