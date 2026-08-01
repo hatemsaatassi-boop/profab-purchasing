@@ -1021,6 +1021,26 @@ async function renderFullPurchasingView(content) {
               <input type="text" id="supContact" placeholder="مثال: م. أحمد علي">
             </div>
             <div class="field">
+              <label>اسم البنك المصرفي</label>
+              <select id="supBankName" required>
+                <option value="مصرف الراجحي">مصرف الراجحي (Al Rajhi)</option>
+                <option value="البنك الأهلي السعودي SNB">البنك الأهلي السعودي (SNB)</option>
+                <option value="بنك الرياض">بنك الرياض (Riyad Bank)</option>
+                <option value="بنك الإنماء">بنك الإنماء (Alinma Bank)</option>
+                <option value="البنك العربي الوطني ANB">البنك العربي الوطني (ANB)</option>
+                <option value="البنك السعودي الأول SABB">البنك السعودي الأول (SABB)</option>
+                <option value="بنك البلاد">بنك البلاد (Bank Albilad)</option>
+                <option value="بنك الجزيرة">بنك الجزيرة (Bank AlJazira)</option>
+                <option value="بنك آخر">بنك آخر</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>رقم الحساب الحسابي / الآيبان (IBAN)</label>
+              <input type="text" id="supIban" placeholder="مثال: SA8080000011223344556677" required>
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
               <label>المدينة / الفرع</label>
               <select id="supCity">
                 <option value="جدة">جدة</option>
@@ -1030,8 +1050,8 @@ async function renderFullPurchasingView(content) {
                 <option value="المدينة المنورة">المدينة المنورة</option>
               </select>
             </div>
-            <div class="field" style="display:flex;align-items:flex-end">
-              <button type="submit" class="btn-primary" style="width:100%">+ إضافة المورد للدليل</button>
+            <div class="field" style="display:flex;align-items:flex-end;flex:2">
+              <button type="submit" class="btn-primary" style="width:100%">+ إضافة المورد والدفعات للدليل</button>
             </div>
           </div>
         </form>
@@ -1039,18 +1059,18 @@ async function renderFullPurchasingView(content) {
 
       <div class="card">
         <h2>
-          <span>🏢 دليل الموردين المعتمدين بالشركة</span>
-          <button class="btn-secondary" onclick="exportTableToCsv('suppliersTable', 'دليل_الموردين')">📥 تصدير Excel</button>
+          <span>🏢 دليل الموردين والبيانات البنكية المعتمدة بالشركة</span>
+          <button class="btn-secondary" onclick="exportTableToCsv('suppliersTable', 'دليل_الموردين_والحسابات_البنكية')">📥 تصدير Excel</button>
         </h2>
 
         <div class="toolbar">
           <div class="search-box">
             <span class="search-icon">🔍</span>
-            <input type="text" id="suppliersSearchInput" placeholder="بحث باسم المورد، مجال التوريد، أو المدينة...">
+            <input type="text" id="suppliersSearchInput" placeholder="بحث باسم المورد، البنك، الآيبان، أو المدينة...">
           </div>
         </div>
 
-        <div id="suppliersWrap" class="table-wrap"><div class="empty-state">جاري تحميل الموردين...</div></div>
+        <div id="suppliersWrap" class="table-wrap"><div class="empty-state">جاري تحميل الموردين والحسابات البنكية...</div></div>
       </div>
     </div>
     <div id="tabReview" class="tab-panel hidden">
@@ -1064,7 +1084,7 @@ async function renderFullPurchasingView(content) {
       </div>
     </div>
     <div id="tabFinance" class="tab-panel hidden">
-      <div class="card"><h2>سجل المالية <small>خاص بقسم المشتريات والإدارة</small></h2>
+      <div class="card"><h2>سجل المالية والتحويلات <small>خاص بقسم المشتريات والمالية والإدارة</small></h2>
         <div id="financeWrap" class="table-wrap"><div class="empty-state">جاري التحميل...</div></div>
       </div>
     </div>
@@ -1081,13 +1101,15 @@ async function renderFullPurchasingView(content) {
       category: document.getElementById('supCategory').value,
       phone: document.getElementById('supPhone').value,
       contact: document.getElementById('supContact').value || '—',
+      bankName: document.getElementById('supBankName').value,
+      iban: document.getElementById('supIban').value.toUpperCase(),
       city: document.getElementById('supCity').value,
       status: 'معتمد'
     };
     list.unshift(newSup);
     saveSuppliersList(list);
-    logActivity(`قسم المشتريات: إضافة مورد جديد [${newSup.name}] بمجال (${newSup.category})`);
-    toast('تمت إضافة المورد لدليل الشركة بنجاح ✓', 'success');
+    logActivity(`قسم المشتريات: إضافة مورد جديد [${newSup.name}] مع بيانات البنك (${newSup.bankName}) والآيبان (${newSup.iban})`);
+    toast('تمت إضافة المورد والبيانات البنكية بنجاح ✓', 'success');
     e.target.reset();
     loadSuppliersDirectory();
     if (typeof window.refreshCurrentView === 'function') window.refreshCurrentView();
@@ -1199,22 +1221,22 @@ async function renderFactoryPurchasing(content, branch) {
   loadInventory(branch);
 }
 
-/* ====== إدارة وتخزين دليل الموردين ====== */
+/* ====== إدارة وتخزين دليل الموردين والبيانات البنكية ====== */
 function getSuppliersList() {
   try {
-    const cached = localStorage.getItem('pf_suppliers_directory_v1');
+    const cached = localStorage.getItem('pf_suppliers_directory_v2');
     if (cached) return JSON.parse(cached);
   } catch (e) {}
   return [
-    { id: 'SUP-101', name: 'شركة الحديد الوطنية', category: 'حديد وهياكل', phone: '0501112233', contact: 'م. خالد العتيبي', city: 'جدة', status: 'معتمد' },
-    { id: 'SUP-102', name: 'مصنع الشرق للألمنيوم', category: 'ألمنيوم وزجاج', phone: '0554445566', contact: 'أ. سامي الزهراني', city: 'الرياض', status: 'معتمد' },
-    { id: 'SUP-103', name: 'الشركة السعودية للهيدروليك', category: 'أنظمة هيدروليكية', phone: '0567778899', contact: 'م. عادل الشمري', city: 'الدمام', status: 'معتمد' },
-    { id: 'SUP-104', name: 'مؤسسة التوريدات الصناعية', category: 'اكسسوارات وقطع غيار', phone: '0541122334', contact: 'أ. فهد الدوسري', city: 'جدة', status: 'معتمد' }
+    { id: 'SUP-101', name: 'شركة الحديد الوطنية', category: 'حديد وهياكل', phone: '0501112233', contact: 'م. خالد العتيبي', bankName: 'مصرف الراجحي', iban: 'SA8080000011223344556677', city: 'جدة', status: 'معتمد' },
+    { id: 'SUP-102', name: 'مصنع الشرق للألمنيوم', category: 'ألمنيوم وزجاج', phone: '0554445566', contact: 'أ. سامي الزهراني', bankName: 'البنك الأهلي السعودي SNB', iban: 'SA4510000099887766554433', city: 'الرياض', status: 'معتمد' },
+    { id: 'SUP-103', name: 'الشركة السعودية للهيدروليك', category: 'أنظمة هيدروليكية', phone: '0567778899', contact: 'م. عادل الشمري', bankName: 'بنك الرياض', iban: 'SA2020000055443322110099', city: 'الدمام', status: 'معتمد' },
+    { id: 'SUP-104', name: 'مؤسسة التوريدات الصناعية', category: 'اكسسوارات وقطع غيار', phone: '0541122334', contact: 'أ. فهد الدوسري', bankName: 'بنك الإنماء', iban: 'SA6500000012345678901234', city: 'جدة', status: 'معتمد' }
   ];
 }
 
 function saveSuppliersList(list) {
-  try { localStorage.setItem('pf_suppliers_directory_v1', JSON.stringify(list)); } catch (e) {}
+  try { localStorage.setItem('pf_suppliers_directory_v2', JSON.stringify(list)); } catch (e) {}
 }
 
 function loadSuppliersDirectory() {
@@ -1228,19 +1250,20 @@ function loadSuppliersDirectory() {
   }
 
   wrap.innerHTML = `<table id="suppliersTable"><thead><tr>
-    <th>كود المورد</th><th>اسم المورد / الشركة</th><th>مجال التوريد</th><th>رقم التواصل</th><th>الشخص المسؤول</th><th>المدينة</th><th>الحالة</th><th>الإجراءات</th>
+    <th>كود المورد</th><th>اسم المورد / الشركة</th><th>مجال التوريد</th><th>رقم التواصل</th><th>اسم البنك المصرفي</th><th>رقم الآيبان (IBAN)</th><th>المسؤول والمدينة</th><th>الإجراءات</th>
   </tr></thead><tbody>${suppliers.map(s => {
     const waPhone = (s.phone || '').replace(/\D/g, '');
     const waUrl = waPhone ? `https://wa.me/966${waPhone.startsWith('0') ? waPhone.slice(1) : waPhone}` : '#';
+    const ibanDisplay = s.iban ? `<code style="background:var(--bg-hover);padding:4px 8px;border-radius:6px;font-weight:700;letter-spacing:0.5px">${s.iban}</code>` : '—';
     return `
       <tr data-id="${s.id}">
         <td><b>${s.id}</b></td>
         <td><b>${s.name}</b></td>
         <td><span class="badge" style="background:rgba(255,159,28,0.15);color:var(--accent-orange)">${s.category}</span></td>
         <td><a href="${waUrl}" target="_blank" class="whatsapp-link">💬 <span>${s.phone || 'واتساب'}</span></a></td>
-        <td>${s.contact || '—'}</td>
-        <td>${s.city || '—'}</td>
-        <td><span class="badge approved">${s.status || 'معتمد'}</span></td>
+        <td><b>${s.bankName || '—'}</b></td>
+        <td>${ibanDisplay}</td>
+        <td>${s.contact || '—'} <small style="color:var(--text-muted)">(${s.city || '—'})</small></td>
         <td><button class="btn-danger deleteSupBtn" style="padding:4px 10px;font-size:12px">إزالة</button></td>
       </tr>`;
   }).join('')}</tbody></table>`;
@@ -1378,14 +1401,29 @@ async function loadFinance() {
   const wrap = document.getElementById('financeWrap');
   if (!wrap) return;
 
+  const suppliers = getSuppliersList();
+
   fetchWithCache('finance_records', 'getFinance', {}, (rows) => {
     rows = rows || [];
     if (!rows.length) { wrap.innerHTML = '<div class="empty-state">ما في سجلات مالية بعد</div>'; return; }
-    wrap.innerHTML = `<table><thead><tr>
-      <th>رقم الطلب</th><th>المورد</th><th>المادة</th><th>السعر</th><th>تاريخ الموافقة</th>
-    </tr></thead><tbody>${rows.slice().reverse().map(r => `
-      <tr><td>${r['رقم الطلب']}</td><td>${r['المورد']}</td><td>${r['المادة']}</td><td>${r['السعر']}</td><td>${fmtDate(r['تاريخ الموافقة'])}</td></tr>
-    `).join('')}</tbody></table>`;
+    wrap.innerHTML = `<table id="financeTable"><thead><tr>
+      <th>رقم الطلب</th><th>اسم المورد</th><th>اسم البنك المصرفي</th><th>رقم الآيبان (IBAN)</th><th>المادة</th><th>السعر الإجمالي</th><th>تاريخ الاعتماد</th>
+    </tr></thead><tbody>${rows.slice().reverse().map(r => {
+      const sup = suppliers.find(s => s.name === r['المورد']) || {};
+      const bankName = sup.bankName || r['البنك'] || '—';
+      const iban = sup.iban || r['الآيبان'] || '—';
+      const ibanCode = iban !== '—' ? `<code style="background:var(--bg-hover);padding:3px 8px;border-radius:6px;font-weight:700">${iban}</code>` : '—';
+      return `
+        <tr>
+          <td><b>${r['رقم الطلب']}</b></td>
+          <td><b>${r['المورد']}</b></td>
+          <td><b>${bankName}</b></td>
+          <td>${ibanCode}</td>
+          <td>${r['المادة']}</td>
+          <td><span class="badge approved">${r['السعر']} ريال</span></td>
+          <td>${fmtDate(r['تاريخ الموافقة'])}</td>
+        </tr>`;
+    }).join('')}</tbody></table>`;
   });
 }
 
