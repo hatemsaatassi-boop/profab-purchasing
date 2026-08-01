@@ -195,7 +195,8 @@ async function renderFactoryView(content, branch) {
           <div class="row">
             <div class="field">
               <label>اسم المادة</label>
-              <select id="materialSelect" required></select>
+              <input type="text" id="materialSelect" list="materialSuggestions" placeholder="اكتب اسم المادة" required>
+              <datalist id="materialSuggestions"></datalist>
             </div>
             <div class="field">
               <label>الكمية</label>
@@ -224,7 +225,7 @@ async function renderFactoryView(content, branch) {
       <div class="card">
         <h2>تحديث كمية المخزون</h2>
         <form id="invForm" class="inline-form">
-          <select id="invMaterialSelect"></select>
+          <input type="text" id="invMaterialSelect" list="materialSuggestions" placeholder="اكتب اسم المادة" required>
           <input type="number" id="invQtyInput" placeholder="الكمية الحالية" min="0" required>
           <button type="submit" class="btn-secondary">حفظ التحديث</button>
         </form>
@@ -235,10 +236,7 @@ async function renderFactoryView(content, branch) {
 
   setupTabs();
 
-  const materials = await loadMaterials();
-  const matOptions = materials.map(m => `<option value="${m['اسم المادة']}">${m['اسم المادة']}</option>`).join('');
-  document.getElementById('materialSelect').innerHTML = matOptions || '<option value="">لا توجد مواد مسجلة</option>';
-  document.getElementById('invMaterialSelect').innerHTML = matOptions || '<option value="">لا توجد مواد مسجلة</option>';
+  refreshMaterialSuggestions(branch);
 
   document.getElementById('requestForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -259,6 +257,7 @@ async function renderFactoryView(content, branch) {
         toast(result.queued ? 'اتحفظ الطلب محلياً وبيترسل أول ما يرجع النت' : 'تم إرسال الطلب بنجاح ✓', 'success');
         e.target.reset();
         loadMyRequests(branch);
+        refreshMaterialSuggestions(branch);
       } else {
         toast(result.message || 'صار خطأ، حاول مرة ثانية', 'error');
       }
@@ -282,6 +281,7 @@ async function renderFactoryView(content, branch) {
       toast(result.queued ? 'اتحفظ التحديث محلياً' : 'تم تحديث الجرد ✓', 'success');
       e.target.reset();
       loadInventory(branch);
+      refreshMaterialSuggestions(branch);
     } else {
       toast(result.message || 'صار خطأ', 'error');
     }
@@ -291,6 +291,21 @@ async function renderFactoryView(content, branch) {
   loadInventory(branch);
 
   window.refreshCurrentView = () => { loadMyRequests(branch); loadInventory(branch); };
+}
+
+async function refreshMaterialSuggestions(branch) {
+  const list = document.getElementById('materialSuggestions');
+  if (!list) return;
+  const names = new Set();
+  try {
+    const reqResult = await apiCall('getRequests', { role: branch, branch: branch });
+    (reqResult.data || []).forEach(r => { if (r['المادة']) names.add(r['المادة']); });
+  } catch (e) {}
+  try {
+    const invResult = await apiCall('getInventory', { branch: branch });
+    (invResult.data || []).forEach(r => { if (r['المادة']) names.add(r['المادة']); });
+  } catch (e) {}
+  list.innerHTML = Array.from(names).map(n => `<option value="${n}"></option>`).join('');
 }
 
 async function loadMyRequests(branch) {
