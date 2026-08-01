@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pro Fab | نظام المشتريات</title>
+<link rel="icon" href="assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="offlineBanner" class="offline-banner"></div>
+
+<!-- شاشة تسجيل الدخول -->
+<div id="loginScreen" class="login-wrap">
+  <div class="login-card">
+    <img src="assets/logo.png" alt="Pro Fab">
+    <h1>نظام المشتريات</h1>
+    <p class="subtitle">Pro Fab · Professional Fabrication</p>
+    <div id="loginError" class="error-msg hidden"></div>
+    <form id="loginForm">
+      <div class="field">
+        <label>الحساب</label>
+        <select id="accountSelect" required>
+          <option value="مصنع جدة">مصنع جدة</option>
+          <option value="مصنع الرياض">مصنع الرياض</option>
+          <option value="موظف المشتريات">موظف المشتريات</option>
+          <option value="المدير">المدير</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>كلمة المرور</label>
+        <input type="password" id="passwordInput" required>
+      </div>
+      <button type="submit" class="btn-primary" id="loginBtn">تسجيل الدخول</button>
+    </form>
+  </div>
+</div>
+
+<!-- شاشة التطبيق -->
+<div id="appScreen" class="hidden">
+  <header class="app-header">
+    <div class="brand">
+      <img src="assets/logo.png" alt="Pro Fab">
+      <div class="brand-text">نظام المشتريات<span>Pro Fab Purchasing</span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="who">مرحباً، <b id="whoAmI"></b></span>
+      <button class="logout-btn" id="logoutBtn">تسجيل الخروج</button>
+    </div>
+  </header>
+  <div class="container" id="appContent"></div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
