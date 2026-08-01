@@ -1037,7 +1037,14 @@ async function renderFullPurchasingView(content) {
       <div class="card">
         <h2>
           <span>🏢 دليل الموردين والبيانات البنكية المعتمدة بالشركة</span>
-          <button class="btn-secondary" onclick="exportTableToCsv('suppliersTable', 'دليل_الموردين_والحسابات_البنكية')">📥 تصدير Excel</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <label class="btn-info" style="cursor:pointer;margin:0">
+              📂 استيراد موردين من ملف Excel / CSV
+              <input type="file" id="importSuppliersInput" accept=".csv, .xlsx, .xls, .txt" style="display:none">
+            </label>
+            <button class="btn-secondary" onclick="downloadSupplierTemplate()">📋 تحميل نموذج Excel</button>
+            <button class="btn-secondary" onclick="exportTableToCsv('suppliersTable', 'دليل_الموردين_والحسابات_البنكية')">📥 تصدير Excel</button>
+          </div>
         </h2>
 
         <div class="toolbar">
@@ -1093,6 +1100,17 @@ async function renderFullPurchasingView(content) {
   });
 
   attachTableSearch('suppliersSearchInput', 'suppliersWrap');
+  
+  const importInput = document.getElementById('importSuppliersInput');
+  if (importInput) {
+    importInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleSuppliersImport(e.target.files[0]);
+        e.target.value = '';
+      }
+    });
+  }
+
   loadSuppliersDirectory();
 
   let materials = getCache('materials') || [];
@@ -1196,6 +1214,83 @@ async function renderFactoryPurchasing(content, branch) {
 
   loadMyRequests(branch);
   loadInventory(branch);
+}
+
+/* ====== تحميل نموذج إكسل تجريبي للموردين ====== */
+function downloadSupplierTemplate() {
+  const csvContent = '\uFEFF' + [
+    'اسم المورد,مجال التوريد,رقم الهاتف,الشخص المسؤول,اسم البنك,رقم الآيبان IBAN,المدينة',
+    'شركة سابك للحديد,حديد وهياكل,0501112233,م. أحمد علي,مصرف الراجحي,SA8080000011223344556677,جدة',
+    'مصنع الخليج للألمنيوم,ألمنيوم وزجاج,0554445566,أ. فهد الزهراني,البنك الأهلي السعودي SNB,SA4510000099887766554433,الرياض',
+    'مؤسسة التوريدات الهيدروليكية,أنظمة هيدروليكية,0567778899,م. عادل الشمري,بنك الرياض,SA2020000055443322110099,الدمام'
+  ].join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'نموذج_استيراد_الموردين_ProFab.csv';
+  link.click();
+  toast('تم تحميل نموذج استيراد الموردين بنجاح ✓', 'success');
+}
+
+function handleSuppliersImport(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const text = e.target.result;
+    const lines = text.split(/\r\n|\n/);
+    if (!lines.length) { toast('الملف المرفق فارغ', 'error'); return; }
+
+    const suppliersList = getSuppliersList();
+    let importedCount = 0;
+
+    lines.forEach((line, index) => {
+      line = line.trim();
+      if (!line) return;
+
+      if (index === 0 && (line.includes('اسم المورد') || line.includes('المورد') || line.includes('Supplier'))) return;
+
+      let sep = line.includes('\t') ? '\t' : (line.includes(';') ? ';' : ',');
+      const cols = line.split(sep).map(c => c.replace(/^["']|["']$/g, '').trim());
+
+      if (cols.length >= 1 && cols[0]) {
+        const name = cols[0];
+        const category = cols[1] || 'عام';
+        const phone = cols[2] || '—';
+        const contact = cols[3] || '—';
+        const bankName = cols[4] || '—';
+        const iban = cols[5] ? cols[5].toUpperCase() : '—';
+        const city = cols[6] || 'جدة';
+
+        const exists = suppliersList.some(s => s.name.toLowerCase() === name.toLowerCase());
+        if (!exists) {
+          suppliersList.unshift({
+            id: 'SUP-' + Math.floor(100 + Math.random() * 900),
+            name: name,
+            category: category,
+            phone: phone,
+            contact: contact,
+            bankName: bankName,
+            iban: iban,
+            city: city,
+            status: 'معتمد'
+          });
+          importedCount++;
+        }
+      }
+    });
+
+    if (importedCount > 0) {
+      saveSuppliersList(suppliersList);
+      logActivity(`قسم المشتريات: استيراد (${importedCount}) مورد جديد دفعة واحدة من ملف Excel / CSV`);
+      toast(`تم استيراد (${importedCount}) مورد جديد دفعة واحدة بنجاح ✓`, 'success');
+      loadSuppliersDirectory();
+      if (typeof window.refreshCurrentView === 'function') window.refreshCurrentView();
+    } else {
+      toast('لم يتم إدراج موردين جدد (إما مسجلين مسبقاً أو صيغة الملف غير صحيحة)', 'error');
+    }
+  };
+  reader.readAsText(file);
 }
 
 /* ====== إدارة وتخزين دليل الموردين والبيانات البنكية ====== */
