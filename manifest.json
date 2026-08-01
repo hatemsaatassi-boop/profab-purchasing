@@ -1,0 +1,16 @@
+{
+  "name": "مشروع برو فاب - Pro Fab Enterprise",
+  "short_name": "مشروع برو فاب",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0b0f19",
+  "theme_color": "#ff9f1c",
+  "description": "المنصة الإدارية المتكاملة الفائقة - Pro Fab Enterprise",
+  "icons": [
+    {
+      "src": "assets/logo.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png"
+    }
+  ]
+}
