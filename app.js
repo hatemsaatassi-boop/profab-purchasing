@@ -297,14 +297,12 @@ async function refreshMaterialSuggestions(branch) {
   const list = document.getElementById('materialSuggestions');
   if (!list) return;
   const names = new Set();
-  try {
-    const reqResult = await apiCall('getRequests', { role: branch, branch: branch });
-    (reqResult.data || []).forEach(r => { if (r['المادة']) names.add(r['المادة']); });
-  } catch (e) {}
-  try {
-    const invResult = await apiCall('getInventory', { branch: branch });
-    (invResult.data || []).forEach(r => { if (r['المادة']) names.add(r['المادة']); });
-  } catch (e) {}
+  const [reqResult, invResult] = await Promise.all([
+    apiCall('getRequests', { role: branch, branch: branch }).catch(() => ({ data: [] })),
+    apiCall('getInventory', { branch: branch }).catch(() => ({ data: [] }))
+  ]);
+  (reqResult.data || []).forEach(r => { if (r['المادة']) names.add(r['المادة']); });
+  (invResult.data || []).forEach(r => { if (r['المادة']) names.add(r['المادة']); });
   list.innerHTML = Array.from(names).map(n => `<option value="${n}"></option>`).join('');
 }
 
@@ -355,8 +353,7 @@ async function renderPurchasingView(content) {
       <div id="pendingWrap" class="table-wrap"><div class="empty-state">جاري التحميل...</div></div>
     </div>
   `;
-  const materials = await loadMaterials();
-  const suppliers = await loadSuppliers();
+  const [materials, suppliers] = await Promise.all([loadMaterials(), loadSuppliers()]);
   await loadPendingForPurchasing(materials, suppliers);
   window.refreshCurrentView = () => loadPendingForPurchasing(materials, suppliers);
 }
@@ -440,7 +437,10 @@ async function renderManagerView(content) {
 }
 
 async function loadManagerData() {
-  const result = await apiCall('getRequests', { role: 'المدير' });
+  const [result] = await Promise.all([
+    apiCall('getRequests', { role: 'المدير' }),
+    loadFinance()
+  ]);
   const rows = result.data || [];
   const pending = rows.filter(r => r['الحالة'] === 'قيد موافقة المدير');
   const decided = rows.filter(r => r['الحالة'] !== 'قيد موافقة المدير');
@@ -482,8 +482,6 @@ async function loadManagerData() {
       <td>${r['السعر'] || '—'}</td><td>${statusBadge(r['الحالة'])}</td><td>${r['ملاحظة المدير'] || ''}</td></tr>
     `).join('')}</tbody></table>`;
   }
-
-  await loadFinance();
 }
 
 async function decide(requestId, decision, note) {
@@ -499,14 +497,6 @@ async function decide(requestId, decision, note) {
 async function loadFinance() {
   const wrap = document.getElementById('financeWrap');
   if (!wrap) return;
-  try {
-    const result = await apiCall('getRequests', { role: 'المدير' });
-    // Finance rows come from a separate sheet; fetch via dedicated call
-  } catch (e) {}
-  try {
-    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getFinance' }) });
-  } catch (e) {}
-  // fallback simple fetch of finance sheet through generic call
   try {
     const result = await apiCall('getFinance', {});
     const rows = result.data || [];
