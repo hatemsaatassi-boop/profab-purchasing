@@ -10,7 +10,27 @@
 <link rel="icon" href="assets/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=9">
+<link rel="stylesheet" href="style.css?v=10">
+<style>
+  .app-header .brand img, img.brand-logo-img {
+    height: 85px !important;
+    max-height: 95px !important;
+    width: auto !important;
+    object-fit: contain !important;
+    filter: drop-shadow(0 4px 14px rgba(255, 159, 28, 0.45)) drop-shadow(0 3px 10px rgba(0,0,0,0.7)) !important;
+  }
+  .login-card img, .login-card img.brand-logo-img {
+    width: 175px !important;
+    max-width: 100% !important;
+    height: auto !important;
+  }
+  @media (max-width: 768px) {
+    .app-header .brand img, img.brand-logo-img {
+      height: 72px !important;
+      max-height: 80px !important;
+    }
+  }
+</style>
 </head>
 <body>
 
